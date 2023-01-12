@@ -12,7 +12,7 @@ variables:
   bkstrgrg: 'azDevTFtest01'
   bkstrg: 'csb1003200246fe0a59'
   bkcontainer: 'tfstate'
-  bkstrgkeyr: 'devpipeline.terraform.tfstate'
+  bkstrgkey: 'devpipeline.terraform.tfstate'
 stages:
   - stage: tfvalidate
     jobs: 
@@ -23,5 +23,52 @@ stages:
           displayName: tfinstall
           inputs:
             terraformVersion: 'latest'
-        
-        
+        - task: TerraformCLI@0
+          displayName: init
+          inputs:
+            command: 'init'
+            backendType: 'azurerm'
+            backendServiceArm: 'DevServiceConnection'
+            backendAzureRmResourceGroupName: '$(bkstrgrg)'
+            backendAzureRmStorageAccountName: '$(bkstrg)'
+            backendAzureRmContainerName: '$(bkcontainer)'
+            backendAzureRmKey: '$(bkstrgkey)'
+            allowTelemetryCollection: true
+        - task: TerraformCLI@0
+          displayName: validate
+          inputs:
+            command: 'validate'
+            allowTelemetryCollection: true
+  - stage: tfdeploy
+    condition: successded('tfvalidate')
+    dependsOn: tfvalidate
+    jobs: 
+    - job: apply
+      steps:
+        - task: TerraformInstaller@0
+          displayName: tfinstall
+          inputs:
+            terraformVersion: 'latest'
+        - task: TerraformCLI@0
+          displayName: init
+          inputs:
+            command: 'init'
+            backendType: 'azurerm'
+            backendServiceArm: 'DevServiceConnection'
+            backendAzureRmResourceGroupName: '$(bkstrgrg)'
+            backendAzureRmStorageAccountName: '$(bkstrg)'
+            backendAzureRmContainerName: '$(bkcontainer)'
+            backendAzureRmKey: '$(bkstrgkey)'
+            allowTelemetryCollection: true
+        - task: TerraformCLI@0
+          displayName: plan
+          inputs:
+            command: 'plan'
+            environmentServiceName: 'DevServiceConnection'
+            allowTelemetryCollection: true
+        - task: TerraformCLI@0
+          displayName: apply
+          inputs:
+            command: 'apply'
+            environmentServiceName: 'DevServiceConnection'
+            allowTelemetryCollection: true
