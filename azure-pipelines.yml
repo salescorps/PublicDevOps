@@ -23,16 +23,56 @@ stages:
           - task: TerraformInstaller@0
             displayName: tfinstall
             inputs:
-             terraformVersion: latest
-          - task: TerraformInstaller@0
+              terraformVersion: 'latest'
+          - task: TerraformCLI@0
             displayName: init
-            inputs: 
-              provider: 'azurerm'
+            inputs:
               command: 'init'
-              backendServiceArm: 'PrivateSubscription'
-              backendAzureRmResourceGroupName: 'patricksdemostorage'
-              backendAzureRmStorageAccountName: 'patricksdemostorage'
-              backendAzureRmContainerName: 'microservice'
-              backendAzureRmKey: 'microservice.state'
+              backendType: 'azurerm'
+              backendServiceArm: 'DevServiceConnection'
+              backendAzureRmResourceGroupName: '$(bkstgrg)'
+              backendAzureRmStorageAccountName: '$(bkstg)'
+              backendAzureRmContainerName: '$(bkcontenaire)'
+              backendAzureRmKey: '$(bkstgkey)'
+              allowTelemetryCollection: true
+          - task: TerraformCLI@0
+            displayName: validate
+            inputs:
+              command: 'validate'
+              allowTelemetryCollection: true
+  - stage: tfdeploy
+    condition: succeeded ('tfvalalide')
+    dependsOn: tfvalalide
+    jobs:
+      - job: apply
+        steps:
+          - task: TerraformInstaller@0
+            displayName: tfinstall
+            inputs:
+              terraformVersion: 'latest'
+          - task: TerraformCLI@0
+            displayName: init
+            inputs:
+              command: 'init'
+              backendType: 'azurerm'
+              backendServiceArm: 'DevServiceConnection'
+              backendAzureRmResourceGroupName: '$(bkstgrg)'
+              backendAzureRmStorageAccountName: '$(bkstg)'
+              backendAzureRmContainerName: '$(bkcontenaire)'
+              backendAzureRmKey: '$(bkstgkey)'
+              allowTelemetryCollection: true
+          - task: TerraformCLI@0
+            displayName: plan
+            inputs:
+              command: 'plan'
+              environmentServiceName: 'DevServiceConnection'
+              allowTelemetryCollection: true
+          - task: TerraformCLI@0
+            displayName: apply
+            inputs:
+              command: 'apply'
+              environmentServiceName: 'DevServiceConnection'
+              allowTelemetryCollection: true
+
 
 
